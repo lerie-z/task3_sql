@@ -87,3 +87,31 @@ JOIN customer ct
 GROUP BY city
 ORDER BY inactive DESC
 
+-- 7 - show film category with largest total rental in cities that start with an 'a' or contain '-'
+WITH total AS
+(SELECT
+	ct.city,
+	cg.name AS category,
+	round(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))/3600) AS hours_spent
+FROM category cg
+JOIN film_category fc
+	ON cg.category_id = fc.category_id
+JOIN film f
+	ON fc.film_id = f.film_id
+JOIN inventory i
+	ON f.film_id = i.film_id
+JOIN rental r
+	ON i.inventory_id = r.inventory_id
+JOIN customer c
+	ON r.customer_id = c.customer_id
+JOIN address a 
+	ON c.address_id = a.address_id
+JOIN city ct
+	ON a.city_id = ct.city_id
+WHERE 
+	(LOWER(ct.city) LIKE 'a%' OR ct.city LIKE '%-%'))
+SELECT DISTINCT
+	city,
+	FIRST_VALUE(category) OVER (PARTITION BY city ORDER BY hours_spent DESC) as category
+FROM total
+ORDER BY city
